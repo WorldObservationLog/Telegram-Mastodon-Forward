@@ -18,16 +18,18 @@ A simple bot to auto forwarding messages from telegram channel to mastodon.
 
 - Go to https://botfather.t.me , create a new bot and save the token.
 
+- Give the bot admin permission of your channel.
+
 - ```bash
   git clone https://github.com/WorldObservationLog/Telegram-Mastodon-Forward
   cd Telegram-Mastodon-Forward
   python3 -m venv venv
   # For *nix
-  source venv/Scripts/activate
+  source venv/bin/activate
   # For Windows
   venv/Scripts/activate.bat
   pip install -r requirements.txt
-  cp config.example.toml
+  cp config.example.toml config.toml
   # Then edit the config.toml
   python main.py
   ```
