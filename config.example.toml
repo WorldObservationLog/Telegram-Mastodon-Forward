@@ -1,0 +1,10 @@
+[mastodon]
+api_base_url = "https://mastodon.social"
+client_id = "AnExcellentClientId"
+client_secret = "AnExcellentClientSecret"
+access_token = "AnExcellentAccessToken"
+
+
+[telegram]
+bot_token = "AnExcellentBotToken"
+channel_name = "@NewWorldObservationLog"
