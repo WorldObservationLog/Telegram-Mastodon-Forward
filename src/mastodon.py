@@ -7,6 +7,27 @@ from mastodon import Mastodon
 
 from .config import Config
 from .message import MastodonMessage, Media
+from .utils import split_string, split_list
+
+MAX_TEXT_LENGTH = 500
+
+
+def split_message(message: MastodonMessage):
+    split_messages = []
+    if len(message.text) > MAX_TEXT_LENGTH:
+        texts = split_string(message.text, MAX_TEXT_LENGTH)
+    else:
+        texts = [message.text]
+    for text in texts:
+        split_messages.append(MastodonMessage(text=text, medias=[]))
+    split_medias = split_list(message.medias, 4)
+    for medias in split_medias:
+        try:
+            match_message = split_messages[split_medias.index(medias)]
+            match_message.medias = medias
+        except IndexError:
+            split_messages.append(MastodonMessage(text=None, medias=medias))
+    return split_messages
 
 
 class MastodonImpl:
@@ -18,9 +39,22 @@ class MastodonImpl:
                                  api_base_url=config.config.mastodon.api_base_url)
 
     async def send_toot(self, message: MastodonMessage):
-        media_ids = await self.upload_media(message.medias)
-        self.mastodon.status_post(message.text, media_ids=media_ids)
-        logger.info(f"Toot '{message.text}' Has been sent")
+        if len(message.text) > MAX_TEXT_LENGTH or len(message.medias) > 4:
+            messages = split_message(message)
+            toots = []
+            last_toot_id = None
+            for msg in messages:
+                media_ids = await self.upload_media(msg.medias)
+                toot = self.mastodon.status_post(msg.text, media_ids=media_ids, in_reply_to_id=last_toot_id)
+                logger.info(f"Toot '{msg.text}' Has been sent")
+                toots.append(toot)
+                last_toot_id = toot["id"]
+            return toots
+        else:
+            media_ids = await self.upload_media(message.medias)
+            toot = self.mastodon.status_post(message.text, media_ids=media_ids)
+            logger.info(f"Toot '{message.text}' Has been sent")
+            return [toot]
 
     async def upload_media(self, media: List[Media]):
         media_ids = []
