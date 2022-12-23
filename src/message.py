@@ -1,4 +1,3 @@
-import mimetypes
 from io import BytesIO
 from typing import List, Optional
 
@@ -10,29 +9,24 @@ from telegram.helpers import effective_message_type
 class Media:
     content: bytearray
     mimetype: str
-    filename: str
 
-    def __init__(self, content: bytearray, filename=None):
+    def __init__(self, content: bytearray, mimetype: str):
         self.content = content
-        self.filename = filename
+        self.mimetype = mimetype
 
 
 class Photo(Media):
-    def __init__(self, content: bytearray, filename=None):
-        super().__init__(content, filename)
+    def __init__(self, content: bytearray):
+        super().__init__(content, "")
         self.mimetype = Image.MIME[Image.open(BytesIO(content)).format]
 
 
 class Audio(Media):
-    def __init__(self, content: bytearray, filename: str):
-        super().__init__(content, filename)
-        self.mimetype = mimetypes.guess_type(filename)[0]
+    pass
 
 
 class Video(Media):
-    def __init__(self, content: bytearray, filename: str):
-        super().__init__(content, filename)
-        self.mimetype = mimetypes.guess_type(filename)[0]
+    pass
 
 
 MESSAGE_TYPE = {"photo": Photo, "audio": Audio, "video": Video}
@@ -43,7 +37,9 @@ class MastodonMessage:
     medias: List[Optional[Media]]
 
     def __init__(self, text, medias):
-        self.text = text
+        self.text = ""
+        if bool(text):
+            self.text = text
         self.medias = medias
 
     @classmethod
@@ -54,14 +50,14 @@ class MastodonMessage:
 
     @classmethod
     async def from_multi_telegram_messages(cls, messages: List[Message]):
-        text = None
+        text = ""
         medias = []
         for i in messages:
             if i.text:
                 text = i.text
             elif i.caption:
                 text = i.caption
-            medias = await cls.handle_different_media(i)
+            medias.extend(await cls.handle_different_media(i))
         return cls(text=text, medias=medias)
 
     @classmethod
@@ -74,5 +70,5 @@ class MastodonMessage:
         elif message_type:
             file = message.effective_attachment
             content = await (await file.get_file()).download_as_bytearray(bytearray())
-            medias.append(message_type(content=content, filename=file.file_name))
+            medias.append(message_type(content=content, mimetype=file.mime_type))
         return medias
