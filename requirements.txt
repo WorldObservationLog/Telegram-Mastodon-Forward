@@ -3,3 +3,4 @@ loguru~=0.6.0
 pydantic~=1.10.2
 Pillow~=9.3.0
 python-telegram-bot[all]~=20.0b0
+mastodon.py~=1.8.0
